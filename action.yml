@@ -1,0 +1,17 @@
+name: 'Mosaic rush version report action'
+description: 'Creates a version report for a Rush project'
+inputs:
+  table-name:
+    description: 'Dynamodb table name to store version reports'
+    required: true
+    default: 'release-version-report'
+  stack:
+    description: 'Name of the stack, like dev or prod'
+    required: true
+    default: 'dev'
+outputs:
+  versionDetails:
+    description: 'Project versions'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
