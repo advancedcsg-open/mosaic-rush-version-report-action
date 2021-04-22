@@ -1,0 +1,25 @@
+{
+  "name": "rush-version-report-github-action",
+  "version": "1.0.0",
+  "description": "Github action for version report for repositories and Rush based applications.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/advancedcsg/rush-version-report-github-action.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/advancedcsg/rush-version-report-github-action/issues"
+  },
+  "homepage": "https://github.com/advancedcsg/rush-version-report-github-action#readme",
+  "dependencies": {
+    "@actions/core": "^1.2.7",
+    "@actions/github": "^4.0.0",
+    "aws-sdk": "^2.889.0"
+  }
+}
