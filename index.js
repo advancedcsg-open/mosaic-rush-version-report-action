@@ -57,7 +57,12 @@ function processVersions(tableName, stack) {
 }
 
 function getVersion() {
-    return execSync(git_latest_tag_command).toString().trim()
+    try {
+        return execSync(git_latest_tag_command).toString().trim()
+    } catch(e) {
+        console.error(e);
+        return 'v0.0.0'
+    }
 }
 
 function getProjectVersions(projectLocations) {
