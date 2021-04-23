@@ -69,7 +69,7 @@ function getProjectVersions(projectLocations) {
         let packageData = JSON.parse(projectFile);
         let name = packageData['name']
         let version = packageData['version']
-        project[name] = version
+        projects[name] = version
         console.info(`Name: ${name}, version: ${version}`)
     })
     return projects
