@@ -10,9 +10,9 @@ const git_latest_tag_command = 'git describe --tags --abbrev=0'
 
 try {
     const stack = core.getInput('stack');
-    const tableName = core.getInput('table-name');
+    const reportId = core.getInput('report-id');
 
-    let versionDetails = processVersions(tableName, stack)
+    let versionDetails = processVersions(reportId, stack)
 
     core.setOutput("versionDetails", versionDetails);
     const payload = JSON.stringify(github.context.payload, undefined, 2)
@@ -21,7 +21,7 @@ try {
     core.setFailed(error.message);
 }
 
-function processVersions(tableName, stack) {
+function processVersions(reportId, stack) {
     let version = getVersion()
     let rushFile = fs.readFileSync(`rush.json`)
     let rush = JSON.parse(rushFile)
@@ -41,7 +41,7 @@ function processVersions(tableName, stack) {
     dynamodbItem['PK'] = `REPOSITORY#${repositoryName}`
     dynamodbItem['SK'] = `STACK#${stack}`
     let params = {
-        TableName: tableName,
+        TableName: `rush-version-report-${reportId}`,
         Item: dynamodbItem
     };
 

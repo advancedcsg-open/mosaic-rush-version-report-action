@@ -1,10 +1,9 @@
 name: 'Mosaic rush version report action'
 description: 'Creates a version report for a Rush project'
 inputs:
-  table-name:
-    description: 'Dynamodb table name to store version reports'
+  report-id:
+    description: 'Name of the report. Needs to follow a format of (AZaz-0-9) and be url-readable'
     required: true
-    default: 'release-version-report'
   stack:
     description: 'Name of the stack, like dev or prod'
     required: true
