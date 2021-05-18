@@ -4,7 +4,7 @@ inputs:
   table-name:
     description: 'Name of the table that will be storing the reports. Needs to exist.'
     required: false
-    default: 'rush-version-report'
+    default: 'rush-version-reports'
   report-id:
     description: 'Name of the report. Needs to follow a format of (AZaz-0-9) and be url-readable'
     required: true
