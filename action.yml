@@ -8,8 +8,12 @@ inputs:
     description: 'Name of the stack, like dev or prod'
     required: true
     default: 'dev'
+  table-name:
+    description: 'Name of the table to hold the reports'
+    required: false
+    default: 'rush-version-reports'
 outputs:
-  versionDetails:
+  version-details:
     description: 'Project versions'
 runs:
   using: 'node12'

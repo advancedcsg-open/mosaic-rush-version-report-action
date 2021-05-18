@@ -11,17 +11,18 @@ const git_latest_tag_command = 'git describe --tags --abbrev=0'
 try {
     const stack = core.getInput('stack');
     const reportId = core.getInput('report-id');
+    const tableName = core.getInput('table-name');
 
-    let versionDetails = processVersions(reportId, stack)
+    let versionDetails = processVersions(tableName, reportId, stack)
 
-    core.setOutput("versionDetails", versionDetails);
+    core.setOutput("version-details", versionDetails);
     const payload = JSON.stringify(github.context.payload, undefined, 2)
     console.log(`The event payload: ${payload}`);
 } catch (error) {
     core.setFailed(error.message);
 }
 
-function processVersions(reportId, stack) {
+function processVersions(tableName, reportId, stack) {
     let version = getVersion()
     let rushFile = fs.readFileSync(`rush.json`)
     let rush = JSON.parse(rushFile)
@@ -29,19 +30,21 @@ function processVersions(reportId, stack) {
     let projectLocations = rush["projects"]
     let projects = getProjectVersions(projectLocations)
 
+    const date = new Date().toISOString()
+
     let versionDetails = {
         'version': version,
-        'date': new Date().toISOString(),
+        'date': date,
         'projects': projects,
         'stack': stack,
         'repository': repositoryName
     }
 
     let dynamodbItem = {...versionDetails};
-    dynamodbItem['PK'] = `REPOSITORY#${repositoryName}`
-    dynamodbItem['SK'] = `STACK#${stack}`
+    dynamodbItem['PK'] = reportId
+    dynamodbItem['SK'] = `${repositoryName}#${stack}#${date}`
     let params = {
-        TableName: `rush-version-report-${reportId}`,
+        TableName: tableName,
         Item: dynamodbItem
     };
 
