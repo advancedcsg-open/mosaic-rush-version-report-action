@@ -1,12 +1,16 @@
 name: 'Mosaic rush version report action'
 description: 'Creates a version report for a Rush project'
 inputs:
+  table-name:
+    description: 'Name of the table that will be storing the reports. Needs to exist.'
+    required: false
+    default: 'rush-version-report'
   report-id:
     description: 'Name of the report. Needs to follow a format of (AZaz-0-9) and be url-readable'
     required: true
   stack:
     description: 'Name of the stack, like dev or prod'
-    required: true
+    required: false
     default: 'dev'
 outputs:
   versionDetails:
