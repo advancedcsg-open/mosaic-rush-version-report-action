@@ -15,7 +15,7 @@ try {
 
     let versionDetails = processVersions(tableName, reportId, stack)
 
-    core.setOutput("versionDetails", versionDetails);
+    core.setOutput("version-details", versionDetails);
     const payload = JSON.stringify(github.context.payload, undefined, 2)
     console.log(`The event payload: ${payload}`);
 } catch (error) {
@@ -30,7 +30,8 @@ function processVersions(tableName, reportId, stack) {
     let projectLocations = rush["projects"]
     let projects = getProjectVersions(projectLocations)
 
-    let date = new Date().toISOString()
+    const date = new Date().toISOString()
+
     let versionDetails = {
         'version': version,
         'date': date,
