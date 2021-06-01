@@ -6,7 +6,7 @@ const fs = require('fs')
 const dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const {execSync} = require("child_process");
 
-const git_latest_tag_command = 'git tag --list --sort=-version:refname "v*" | head -n 1'
+const git_latest_tag_command = 'git tag --list --sort=-version:refname "v*" --merged | head -n 1'
 
 try {
     const stack = core.getInput('stack');
