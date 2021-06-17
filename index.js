@@ -6,22 +6,25 @@ const fs = require('fs')
 const dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const {execSync} = require("child_process");
 
-const git_latest_tag_command = 'git tag --list --sort=-version:refname "v*" --merged | head -n 1'
+const gitLatestTagCommand = 'git tag --list --sort=-version:refname "v*" --merged | head -n 1';
 
-try {
-    const stack = core.getInput('stack');
-    const reportId = core.getInput('report-id');
-    const tableName = core.getInput('table-name');
+(async () => {
+    try {
+        const stack = core.getInput('stack');
+        const reportId = core.getInput('report-id');
+        const tableName = core.getInput('table-name');
 
-    let versionDetails = processVersions(tableName, reportId, stack)
+        let versionDetails = await processVersions(tableName, reportId, stack)
 
-    core.setOutput("version-details", versionDetails);
-    const payload = JSON.stringify(github.context.payload, undefined, 2)
-} catch (error) {
-    core.setFailed(error.message);
-}
+        core.setOutput("version-details", versionDetails);
+        const payload = JSON.stringify(github.context.payload, undefined, 2)
+    } catch (error) {
+        core.setFailed(error.message);
+    }
+})()
 
-function processVersions(tableName, reportId, stack) {
+
+async function processVersions(tableName, reportId, stack) {
     let version = getVersion()
     let rushFile = fs.readFileSync(`rush.json`)
     let rush = JSON.parse(rushFile)
@@ -30,6 +33,27 @@ function processVersions(tableName, reportId, stack) {
     let projects = getProjectVersions(projectLocations)
 
     const date = new Date().toISOString()
+
+    const latestVersionRecord = await getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack)
+
+    if (latestVersionRecord && latestVersionRecord['version']) {
+        let [latestVersion, hotfix] = latestVersionRecord['version'].split('-')
+
+        if (latestVersion === version) {
+            
+            if (hotfix) {
+                let hotfixNumber = parseInt(hotfix.split('.')[1])
+                hotfixNumber += 1
+                hotfix = `hotfix.${hotfixNumber}`
+    
+            } else {
+                hotfix = `hotfix.1`
+            }
+            version = `${version}-${hotfix}`
+        }
+    }
+
+    console.info(`Repository version: ${version}`)
 
     let versionDetails = {
         'version': version,
@@ -67,9 +91,21 @@ function processVersions(tableName, reportId, stack) {
     return versionDetails
 }
 
+async function getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack){
+    var params = {
+        TableName: tableName,
+        Key: {
+            "PK": reportId,
+            "SK": `LATEST#${repositoryName}#${stack}`
+        }
+    };
+    
+    return await dynamodb.get(params).promise()
+  }
+
 function getVersion() {
     try {
-        return execSync(git_latest_tag_command).toString().trim()
+        return execSync(gitLatestTagCommand).toString().trim()
     } catch(e) {
         console.error(e);
         return 'v0.0.0'
