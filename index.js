@@ -6,7 +6,7 @@ const fs = require('fs')
 const dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const {execSync} = require("child_process");
 
-const git_latest_tag_command = 'git tag --list --sort=-version:refname "v*" --merged | head -n 1'
+const gitLatestTagCommand = 'git tag --list --sort=-version:refname "v*" --merged | head -n 1';
 
 (async () => {
     try {
@@ -105,7 +105,7 @@ async function getLatestVersionFromEnvironment(tableName, reportId, repositoryNa
 
 function getVersion() {
     try {
-        return execSync(git_latest_tag_command).toString().trim()
+        return execSync(gitLatestTagCommand).toString().trim()
     } catch(e) {
         console.error(e);
         return 'v0.0.0'
