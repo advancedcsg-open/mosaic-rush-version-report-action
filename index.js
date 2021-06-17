@@ -35,10 +35,9 @@ async function processVersions(tableName, reportId, stack) {
     const date = new Date().toISOString()
 
     const latestVersionRecord = await getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack)
-    console.log(latestVersionRecord)
 
-    if (latestVersionRecord) {
-        let [latestVersion, hotfix] = latestVersionRecord.version.split('-')
+    if (latestVersionRecord && latestVersionRecord['version']) {
+        let [latestVersion, hotfix] = latestVersionRecord['version'].split('-')
 
         if (latestVersion === version) {
             
