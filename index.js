@@ -53,6 +53,8 @@ async function processVersions(tableName, reportId, stack) {
         }
     }
 
+    console.info(`Repository version: ${version}`)
+
     let versionDetails = {
         'version': version,
         'date': date,
