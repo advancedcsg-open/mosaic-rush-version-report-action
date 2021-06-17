@@ -35,20 +35,23 @@ async function processVersions(tableName, reportId, stack) {
     const date = new Date().toISOString()
 
     const latestVersionRecord = await getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack)
+    console.log(latestVersionRecord)
 
-    let [latestVersion, hotfix] = latestVersionRecord.version.split('-')
+    if (latestVersionRecord) {
+        let [latestVersion, hotfix] = latestVersionRecord.version.split('-')
 
-    if (latestVersion === version) {
-        
-        if (hotfix) {
-            let hotfixNumber = parseInt(hotfix.split('.')[1])
-            hotfixNumber += 1
-            hotfix = `hotfix.${hotfixNumber}`
-
-        } else {
-            hotfix = `hotfix.1`
+        if (latestVersion === version) {
+            
+            if (hotfix) {
+                let hotfixNumber = parseInt(hotfix.split('.')[1])
+                hotfixNumber += 1
+                hotfix = `hotfix.${hotfixNumber}`
+    
+            } else {
+                hotfix = `hotfix.1`
+            }
+            version = `${version}-${hotfix}`
         }
-        version = `${version}-${hotfix}`
     }
 
     let versionDetails = {
@@ -95,12 +98,8 @@ async function getLatestVersionFromEnvironment(tableName, reportId, repositoryNa
             "SK": `LATEST#${repositoryName}#${stack}`
         }
     };
-    try {
-      const data = await dynamodb.get(params).promise()
-      return data
-    } catch (err) {
-      return err
-    }
+    
+    return await dynamodb.get(params).promise()
   }
 
 function getVersion() {
