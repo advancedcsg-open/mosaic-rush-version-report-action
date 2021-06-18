@@ -34,12 +34,15 @@ async function processVersions(tableName, reportId, stack) {
 
     const date = new Date().toISOString()
 
-    const latestVersionRecord = await getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack)
+    const latestVersionResponse = await getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack)
+    const latestVersionItem = latestVersionResponse['Item']
 
-    if (latestVersionRecord && latestVersionRecord['version']) {
-        let [latestVersion, hotfix] = latestVersionRecord['version'].split('-')
+    if (latestVersionItem) {
+        let latestVersion= latestVersionItem['version']
 
         if (latestVersion === version) {
+
+            let [baseVersion, hotfix] = version.split('-')
             
             if (hotfix) {
                 let hotfixNumber = parseInt(hotfix.split('.')[1])
@@ -49,7 +52,8 @@ async function processVersions(tableName, reportId, stack) {
             } else {
                 hotfix = `hotfix.1`
             }
-            version = `${version}-${hotfix}`
+            version = `${baseVersion}-${hotfix}`
+            saveVersion(version)
         }
     }
 
@@ -71,20 +75,20 @@ async function processVersions(tableName, reportId, stack) {
         Item: dynamodbItem
     };
 
-    dynamodb.put(params, function (err, data) {
+    dynamodb.put(params, function (err) {
         if (err) {
             throw err
         } else {
-            console.log("Success", data);
+            console.log("Successfully added version");
         }
     });
 
     dynamodbItem['SK'] = `LATEST#${repositoryName}#${stack}`
-    dynamodb.put(params, function (err, data) {
+    dynamodb.put(params, function (err) {
         if (err) {
             throw err
         } else {
-            console.log("Success", data);
+            console.log("Successfully added latest version");
         }
     });
 
@@ -110,6 +114,10 @@ function getVersion() {
         console.error(e);
         return 'v0.0.0'
     }
+}
+
+function saveVersion(version) {
+    execSync(`git tag -a ${version} -m "Hotfix";git push --tags`)
 }
 
 function getProjectVersions(projectLocations) {
