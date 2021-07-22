@@ -12,6 +12,10 @@ inputs:
     description: 'Name of the stack, like dev or prod'
     required: false
     default: 'dev'
+  multi-branch:
+    description: "Will use an alternate flow for setting the module versions based on having multiple development branches in the repository"
+    required: false
+    default: false
 outputs:
   version-details:
     description: 'Project versions'

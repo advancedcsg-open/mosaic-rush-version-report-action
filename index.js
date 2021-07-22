@@ -3,26 +3,34 @@ const github = require('@actions/github');
 const AWS = require('aws-sdk')
 const fs = require('fs')
 
-const dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
-const {execSync} = require("child_process");
+const dynamodb = new AWS.DynamoDB.DocumentClient({ apiVersion: '2012-08-10' });
+const { execSync } = require("child_process");
 
 const gitLatestTagCommand = 'git tag --list --sort=-version:refname "v*" --merged | head -n 1';
-
 (async () => {
     try {
         const stack = core.getInput('stack');
         const reportId = core.getInput('report-id');
         const tableName = core.getInput('table-name');
+        const multiBranch = core.getInput('multi-branch');
 
-        let versionDetails = await processVersions(tableName, reportId, stack)
+        let branchName = getBranchName()
 
-        core.setOutput("version-details", versionDetails);
-        const payload = JSON.stringify(github.context.payload, undefined, 2)
+        //ReGex for dev/** or tools/**
+        let re = /^(dev|tools)\/.*/
+
+        if (multiBranch && re.test(branchName)) {
+            let versionDetails = await processModuleVersions(branchName.split('/').pop(), tableName, reportId, stack)
+            core.setOutput("version-details", versionDetails);
+        } else {
+            let versionDetails = await processVersions(tableName, reportId, stack)
+            core.setOutput("version-details", versionDetails);
+            const payload = JSON.stringify(github.context.payload, undefined, 2)
+        }
     } catch (error) {
         core.setFailed(error.message);
     }
 })()
-
 
 async function processVersions(tableName, reportId, stack) {
     let version = getVersion()
@@ -38,17 +46,17 @@ async function processVersions(tableName, reportId, stack) {
     const latestVersionItem = latestVersionResponse['Item']
 
     if (latestVersionItem) {
-        let latestVersion= latestVersionItem['version']
+        let latestVersion = latestVersionItem['version']
 
         if (latestVersion === version) {
 
             let [baseVersion, hotfix] = version.split('-')
-            
+
             if (hotfix) {
                 let hotfixNumber = parseInt(hotfix.split('.')[1])
                 hotfixNumber += 1
                 hotfix = `hotfix.${hotfixNumber}`
-    
+
             } else {
                 hotfix = `hotfix.1`
             }
@@ -67,7 +75,7 @@ async function processVersions(tableName, reportId, stack) {
         'repository': repositoryName
     }
 
-    let dynamodbItem = {...versionDetails};
+    let dynamodbItem = { ...versionDetails };
     dynamodbItem['PK'] = reportId
     dynamodbItem['SK'] = `${repositoryName}#${stack}#${date}`
     let params = {
@@ -95,7 +103,7 @@ async function processVersions(tableName, reportId, stack) {
     return versionDetails
 }
 
-async function getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack){
+async function getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack) {
     var params = {
         TableName: tableName,
         Key: {
@@ -103,14 +111,14 @@ async function getLatestVersionFromEnvironment(tableName, reportId, repositoryNa
             "SK": `LATEST#${repositoryName}#${stack}`
         }
     };
-    
+
     return await dynamodb.get(params).promise()
-  }
+}
 
 function getVersion() {
     try {
         return execSync(gitLatestTagCommand).toString().trim()
-    } catch(e) {
+    } catch (e) {
         console.error(e);
         return 'v0.0.0'
     }
@@ -133,4 +141,70 @@ function getProjectVersions(projectLocations) {
         console.info(`Name: ${name}, version: ${version}`)
     })
     return projects
+}
+
+function getBranchName() {
+    return execSync('git rev-parse --abbrev-ref HEAD').toString().trim()
+}
+
+async function processModuleVersions(branchName, tableName, reportId, stack) {
+    let version = getVersion()
+    let re = new RegExp(`(modules|tools)\/${branchName}`)
+    let rushFile = fs.readFileSync(`rush.json`)
+    let rush = JSON.parse(rushFile)
+    let repositoryName = rush["repository"]["url"].split('/').pop()
+    let projectLocations = rush["projects"]
+    projectLocations = projectLocations.filter((project, index) => re.test(project.projectFolder))
+    let projects = getProjectVersions(projectLocations)
+
+    const date = new Date().toISOString()
+
+    const latestVersionResponse = await getLatestVersionFromEnvironment(tableName, reportId, repositoryName, stack)
+    const latestVersionItem = latestVersionResponse['Item']
+
+    console.info(`Repository version: ${version}`)
+
+    let versionDetails = {
+        'version': version,
+        'date': date,
+        'projects': projects,
+        'stack': stack,
+        'repository': repositoryName
+    }
+
+    let dynamodbItem = { ...versionDetails };
+    dynamodbItem['PK'] = reportId
+    dynamodbItem['SK'] = `${repositoryName}#${stack}#${date}`
+    let params = {
+        TableName: tableName,
+        Item: dynamodbItem
+    };
+
+    dynamodb.put(params, function (err) {
+        if (err) {
+            throw err
+        } else {
+            console.log("Successfully added version");
+        }
+    });
+    dynamodbItem['SK'] = `LATEST#${repositoryName}#${stack}`
+
+    if (latestVersionItem) {
+        latestVersionItem.date = date
+        Object.keys(projects).forEach((project, index) => {
+            latestVersionItem.projects[project] = projects[project]
+        })
+        params = {
+            TableName: tableName,
+            Item: latestVersionItem
+        }
+    }
+    dynamodb.put(params, function (err) {
+        if (err) {
+            throw err
+        } else {
+            console.log("Successfully added latest version");
+        }
+    });
+    return versionDetails
 }
