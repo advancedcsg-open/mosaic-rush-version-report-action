@@ -12,18 +12,14 @@ const gitLatestTagCommand = 'git tag --list --sort=-version:refname "v*" --merge
         const stack = core.getInput('stack');
         const reportId = core.getInput('report-id');
         const tableName = core.getInput('table-name');
+        const multiBranch = core.getInput('multi-branch');
 
         let branchName = getBranchName()
 
         //ReGex for dev/** or tools/**
         let re = /^(dev|tools)\/.*/
 
-        let rushFile = fs.readFileSync(`rush.json`)
-        let rush = JSON.parse(rushFile)
-        let repositoryName = rush["repository"]["url"].split('/').pop()
-        delete rushFile
-
-        if (repositoryName == "mosaic-shell-modules" && re.test(branchName)) {
+        if (multiBranch && re.test(branchName)) {
             let versionDetails = await processModuleVersions(branchName.split('/').pop(), tableName, reportId, stack)
             core.setOutput("version-details", versionDetails);
         } else {
